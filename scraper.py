@@ -20,11 +20,10 @@ class Book:
 
     def __init__(self, idx, title, edition, subject, url):
 
-        title = self._fix(title)
-
+        self.title      = title.replace('/', '_')
         self.idx        = idx
 
-        self.name       = f'{title}, {edition}'
+        self.name       = f'{self.title}, {edition}'
         self.subject    = self._process(subject)
         self._image_url = None
         self._url       = url
@@ -35,13 +34,6 @@ class Book:
 
     def __repr__(self):
         return f'{self.idx}: {self.name}'
-
-
-    def _fix(self, title):
-        if 'lin' in sys.platform or 'and' in sys.platform:
-            return title.replace('/', '\\')
-        else:
-            return title
 
 
     def _process(self, subject):
@@ -137,7 +129,7 @@ class Book:
             self.__make_links(xpath, epub)
 
         finally:
-            self.image = self.name.replace(' ', '_') + '.jpeg'
+            self.image = self.name.replace(' ', '_').replace('\\', '_') + '.jpeg'
             path       = os.path.join('static', 'images', self.image)
             if not os.path.exists(self.image):
                 self.__set_image_url(html)
