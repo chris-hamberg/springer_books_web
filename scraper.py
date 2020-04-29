@@ -1,15 +1,28 @@
 import pandas as pd
 import lxml.html
-import os, sys
 import requests
+import shelve
+import os, sys
+import logging
 
 
-xlsx = 'Free+English+textbooks.xlsx'
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
+
+if not os.path.exists('database'):
+    os.mkdir('database')
+elif not os.path.isdir('database'):
+    os.remove('database')
+    os.mkdir('database')
+
+
+xlsx = 'database/Free+English+textbooks.xlsx'
 xfile = pd.ExcelFile(xlsx)
 df = xfile.parse()
 
 
-books = {}
+books = shelve.open('database/serial')
 
 
 class Book:
@@ -34,6 +47,10 @@ class Book:
 
     def __repr__(self):
         return f'{self.idx}: {self.name}'
+
+
+    def __eq__(self, other):
+        return self.idx == other.idx
 
 
     def _process(self, subject):
@@ -180,10 +197,27 @@ class Book:
 
 
 def load_data():
+
     for idx, row in df.iterrows():
+
         book = Book(idx, 
-                    df['Book Title'].iloc[idx], 
-                    df['Edition'].iloc[idx], 
-                    df['Subject Classification'].iloc[idx],
-                    df['OpenURL'].iloc[idx])
-        book._scrape()
+                df['Book Title'].iloc[idx], 
+                df['Edition'].iloc[idx], 
+                df['Subject Classification'].iloc[idx],
+                df['OpenURL'].iloc[idx])
+    
+        try:    
+
+            assert book in books[book.subject]
+            logger.info(f' SKIPPING : {book.name}')
+            continue
+
+        except (KeyError, AssertionError) as init:
+
+            subject = books[book.subject]
+            book._scrape()
+            subject.append(book)
+            books[book.subject] = subject
+            logger.info(f' SERIALIZED : {book.name}')
+
+    else: books.close()

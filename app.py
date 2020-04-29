@@ -1,7 +1,8 @@
-from scraper import books, load_data
+from scraper import load_data
 from flask import Flask, render_template, url_for
 from flask import send_from_directory
 
+import shelve
 import os
 
 
@@ -19,12 +20,15 @@ def favicon():
 
 @app.route('/')
 def index():
-    return render_template('index.html', books=books)
+    with shelve.open('database/serial') as books:
+        return render_template('index.html', books=books)
    
 
 @app.route('/<subject>')
 def topic(subject):
-    return render_template(subject + '.html', books=books, subject=subject)
+    with shelve.open('database/serial') as books:
+        return render_template(subject + '.html', books=books, 
+                subject=subject)
 
 
 if __name__ == '__main__':
